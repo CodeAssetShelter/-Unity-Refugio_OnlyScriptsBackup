@@ -35,7 +35,6 @@ public class OctopusLair : MonoBehaviour
     private void OnEnable()
     {
         direction = endPoint.transform.position - transform.position;
-        Debug.Log(direction);
         distance = Vector3.Distance(endPoint.transform.localPosition, transform.localPosition);
         distance = Mathf.Abs(distance);
 

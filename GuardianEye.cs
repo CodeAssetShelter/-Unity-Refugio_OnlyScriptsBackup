@@ -67,7 +67,6 @@ public class GuardianEye : MonoBehaviour
                     if (Mathf.Abs(Vector3.Distance(transform.parent.position, player.position)) >= recognizeDistance ||
                         player.gameObject.activeSelf == false)
                     {
-                        Debug.Log("Minogasu : " + recognizeDistance);
                         foundPlayer = false;
                         transform.localPosition = eyeConstPosition;
                     }
@@ -78,8 +77,6 @@ public class GuardianEye : MonoBehaviour
                         gravityVector = transform.parent.position - body.transform.position;
                         transform.Translate(trackingVector.normalized * eyeSpeed * Time.fixedDeltaTime, Space.World);
                         player.Translate(0, gravityVector.normalized.y * Time.fixedDeltaTime * snatchValue * -1, 0, Space.World);
-                        Debug.Log("Find : " + Mathf.Abs(Vector3.Distance(transform.parent.position, player.position))
-                            + " :: " + recognizeDistance);
                         // Left
                         if (transform.localPosition.x < eyePatchPoint.leftDown.x)
                         {

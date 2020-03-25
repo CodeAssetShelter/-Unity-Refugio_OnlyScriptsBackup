@@ -88,7 +88,7 @@ public class Octopus : MonoBehaviour
             {
                 case State.Up:
                     rigid2D.velocity = Vector3.zero;
-                    transform.Translate(direction * fixedDeltatime * moveSpeed, Space.World);
+                    transform.Translate(direction * fixedDeltatime * moveSpeed * 1.2f, Space.World);
                     break;
 
                 case State.Down:
@@ -104,10 +104,10 @@ public class Octopus : MonoBehaviour
                         {
                             octopus.transform.position = transform.position;
                             octopus.gameObject.SetActive(true);
-                            octopus.InitBullet(bulletSpeed, bulletReach);
+                            octopus.InitBullet(bulletSpeed, bulletReach, Vector3.left);
                         }
                     }
-                    rigid2D.AddForce(Vector3.right * 0.05f, ForceMode2D.Impulse);
+                    rigid2D.AddForce(Vector3.right * 0.03f, ForceMode2D.Impulse);
                     break;
 
                 case State.Idle:
