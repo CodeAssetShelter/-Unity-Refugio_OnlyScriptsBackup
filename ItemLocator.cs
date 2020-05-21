@@ -28,7 +28,7 @@ public class ItemLocator : MonoBehaviour
     //    }
     //}
 
-    public void SetItem(List<GameObject> scoreItems)
+    public void SetItem(List<SpriteRenderer> scoreItems, Sprite sprite)
     {
         //Vector3 prevPos = new Vector3(-20, -20, -20);
         //float dest = 0;
@@ -56,18 +56,20 @@ public class ItemLocator : MonoBehaviour
         //    }
         //    idx++;
         //}
-        StartCoroutine(CoroutineSetItem(scoreItems));
+        StartCoroutine(CoroutineSetItem(scoreItems, sprite));
     }
 
-    IEnumerator CoroutineSetItem(List<GameObject> scoreItems)
+    IEnumerator CoroutineSetItem(List<SpriteRenderer> scoreItems, Sprite sprite)
     {
+        float deltaTimer = Time.deltaTime;
         Vector3 prevPos = new Vector3(-20, -20, -20);
+        Vector3 newPos = prevPos;
         float dest = 0;
         int idx = 0;
 
         while (true)
         {
-            Vector3 newPos = pathCreator.path.GetPointAtDistance(distance * dest, EndOfPathInstruction.Stop);
+            newPos = pathCreator.path.GetPointAtDistance(distance * dest, EndOfPathInstruction.Stop);
             if (newPos == prevPos ||
                 newPos == pathCreator.path.GetPointAtTime(1, EndOfPathInstruction.Stop))
             {
@@ -77,13 +79,14 @@ public class ItemLocator : MonoBehaviour
 
             if (idx >= scoreItems.Count) { idx = 0; }
 
-            if (scoreItems[idx].activeSelf == false)
+            if (scoreItems[idx].gameObject.activeSelf == false)
             {
+                scoreItems[idx].sprite = sprite;
                 scoreItems[idx].transform.position = newPos;
                 scoreItems[idx].transform.SetParent(this.transform);
                 prevPos = newPos;
                 //Debug.Log(newPos + " // " + dest + " // " + pathCreator.path.NumPoints);
-                scoreItems[idx].SetActive(true);
+                scoreItems[idx].gameObject.SetActive(true);
                 dest++;
             }
             idx++;

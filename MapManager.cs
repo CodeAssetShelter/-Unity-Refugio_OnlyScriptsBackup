@@ -30,9 +30,10 @@ public class MapManager : MonoBehaviour
     public class TileMapInfo
     {
         public MapInfo[] maps;
-
+        public GameObject parent;
         public TileMapInfo(GameObject gridRoot)
         {
+            parent = gridRoot;
             maps = gridRoot.GetComponentsInChildren<MapInfo>(true);
         }
     }
@@ -40,9 +41,15 @@ public class MapManager : MonoBehaviour
     [Header ("- Objects")]
     public GameObject[] gridRoots;
     public TileMapInfo[] tileMapInfos;
-    public GameObject scoreItemPrefab;
-    private List<GameObject> scoreItems = new List<GameObject>();
+    public MapBridge mapBridge;
+
+    [Space(20)]
+    public SpriteRenderer scoreItemPrefab;
+    private List<SpriteRenderer> scoreItems = new List<SpriteRenderer>();
     private Vector3 objectPoolingPos = new Vector3(0, 99, 10);
+
+    // 스코어 아이템 스프라이트
+    private Sprite scoreSprite;
 
     [Header("- Object Pools")]
     [Range(300, 500)]
@@ -50,10 +57,25 @@ public class MapManager : MonoBehaviour
 
     [Header("- Speed")]
     public float speed = 2.0f;
+    private float defaultSpeed = 1.5f;
+
 
     // MoveMap values
     MapInfo currMap, nextMap, tempMap;
     Transform currMapTransform, nextMapTransform;
+
+    // Speed Rivision value
+    // 맵 한개를 지날때마다 0.02f 증가
+    // 추가예정
+    private float speedRivision = 1.0f;
+    private float speedRivisionAddValue = 0.01f;
+    private float speedMaxRivision = 2.0f;
+
+
+    // Score Upgrade Value
+    // 맵 x 개를 지났을 때 1 단계 업그레이드
+    [Header("- Score Upgrade Value")]
+    public int scoreItemLevelPerPassedMap = 1;
 
     // Index storage
     List<int> nextMapIndex = new List<int>();
@@ -63,19 +85,31 @@ public class MapManager : MonoBehaviour
     int selectedNextMap = 0;
     int usedMap = 0;
 
+    bool isFinalMap = false;
+    Coroutine coMoveMap;
+    bool gameOver = false;
+
     //public Tilemap[] tileMaps;
     // Start is called before the first frame update
     private void Awake()
     {
         for (int i = 0; i < 300; i++)
         {
-            GameObject item =
+            SpriteRenderer item =
                 Instantiate(scoreItemPrefab, objectPoolingPos, Quaternion.identity, this.transform);
             scoreItems.Add(item);
-            item.SetActive(false);
+            item.gameObject.SetActive(false);
         }
+
+        speed = MainManager.Instance.GetBaseMapSpeed();
+
+        scoreSprite = GameManager.Instance.GetCurrentScoreSprite();
+        defaultSpeed = speed;
+
         StartCoroutine(CoroutineMakeObjects());
     }
+
+    // 오브젝트 풀링을 위한 스코어 아이템 미리 생성
     IEnumerator CoroutineMakeObjects()
     {
         int i = 0;
@@ -83,14 +117,13 @@ public class MapManager : MonoBehaviour
         {
             if (i >= scoreItemAmount)
             {
-                Debug.Log("Break");
-                StopCoroutine(CoroutineMakeObjects());
+                //Debug.Log("Break");
                 yield break;
             }
-            GameObject item =
+            SpriteRenderer item =
                 Instantiate(scoreItemPrefab, objectPoolingPos, Quaternion.identity, this.transform);
             scoreItems.Add(item);
-            item.SetActive(false);
+            item.gameObject.SetActive(false);
             i++;
 
             yield return null;
@@ -99,14 +132,6 @@ public class MapManager : MonoBehaviour
 
     void Start()
     {
-        //for (int i = 0; i < 300; i++)
-        //{
-        //    GameObject item =
-        //        Instantiate(scoreItemPrefab, objectPoolingPos, Quaternion.identity, this.transform);
-        //    scoreItems.Add(item);
-        //    item.SetActive(false);
-        //}
-
         tileMapInfos = new TileMapInfo[gridRoots.Length];
 
         // 타일맵 인포 삽입작업
@@ -118,16 +143,27 @@ public class MapManager : MonoBehaviour
 
         selected = gridMapIndex[Random.Range(0, gridRoots.Length)];
 
+        // Debug
+        // 레트로, 자연, 흑목, 수중, 동굴
+        selected = 0;
 
         Vector3 newPos;
 
         // Ver 1.1
+        //selectedMap = Random.Range(0, tileMapInfos[selected].maps.Length);
+        //MapInfo info = tileMapInfos[selected].maps[selectedMap];
+
+        // Ver 1.2
         selectedMap = Random.Range(0, tileMapInfos[selected].maps.Length);
-        MapInfo info = tileMapInfos[selected].maps[selectedMap];
-        info.transform.position = new Vector3(0, 0, 0);
+        MapInfo info = mapBridge.ActiveMapBridge(EntranceType.MIDDLE, EntranceType.MIDDLE, tileMapInfos[selected].parent.tag);
+
+        // 추가
+        tileMapInfos[selected].parent.SetActive(true);
+
+        info.transform.localPosition = new Vector3(3.5f, 0, 0);
         info.gameObject.SetActive(true);
-        info.SetItemLocate(scoreItems);
-        usedMap++;
+        info.SetItemLocate(scoreItems, scoreSprite);
+        //usedMap++;
 
         currMap = info;
         currMapTransform = currMap.tileMap.transform;
@@ -156,179 +192,147 @@ public class MapManager : MonoBehaviour
         tileMapInfos[selected].maps[selectedNextMap].tileMap.transform.localPosition = newPos;
         tileMapInfos[selected].maps[selectedNextMap].tileMap.gameObject.SetActive(true);
         nextMap = tileMapInfos[selected].maps[selectedNextMap];
-        nextMap.SetItemLocate(scoreItems);
+        nextMap.SetItemLocate(scoreItems, scoreSprite);
         nextMapTransform = nextMap.tileMap.transform;
         usedMap++;
 
-
-
-        // Ver 1.0
-        //for (int i = 0; i < tileMapInfos[selected].maps.Length; i++)
-        //{
-        //    int newIndex = i;
-        //    if (i == 0)
-        //    {
-        //        newIndex = tileMapInfos[selected].maps.Length;
-        //        //Debug.Log("-1" + " // " + tileMapInfos[selected].maps[i].tileMap.size);
-        //    }
-        //    else
-        //    {
-        //        newPos = tileMapInfos[selected].maps[newIndex - 1].tileMap.transform.localPosition + 
-        //            tileMapInfos[selected].maps[i].tileMap.size;
-        //        newPos.y = newPos.z = 0;
-
-        //        tileMapInfos[selected].maps[i].tileMap.transform.localPosition = newPos;
-        //        if (i <= 1)
-        //            tileMapInfos[selected].maps[i].tileMap.gameObject.SetActive(true);
-        //        else
-        //        {
-        //            tileMapInfos[selected].maps[i].tileMap.gameObject.SetActive(false);
-        //        }
-        //    }
-        //}
-
-        StartCoroutine(CoroutineMoveMap());
+        coMoveMap = StartCoroutine(CoroutineMoveMap());
     }
 
     IEnumerator CoroutineMoveMap()
     {
+        WaitForFixedUpdate wait = new WaitForFixedUpdate();
+        int allPassedMap = 0;
+
         while (true)
         {
-            if (currMap.tileMap.transform.localPosition.x < -currMap.tileMap.size.x * 1.1f)
+            if (gameOver == false)
             {
-                usedMap++;
-                currMap.gameObject.SetActive(false);
-
-                // 맵 전환 분기
-                if (gridRoots.Length == 1)
+                if (currMap.tileMap.transform.localPosition.x < -currMap.tileMap.size.x * 1.1f)
                 {
-                   // Debug.Log("Map Ea is 1");
-                }
-                if (usedMap > tileMapInfos[selected].maps.Length - 1 && gridRoots.Length > 1)
-                {
-                    Debug.Log("Map Change !");
-                    usedMap = 0;
-                    int usedIndex = selected;
-                    selected = gridMapIndex[Random.Range(0, gridRoots.Length)];
-                    gridMapIndex.Remove(selected);
-                    gridMapIndex.Add(usedIndex);
-                }
+                    usedMap++;
+                    allPassedMap++;
+                    speedRivision = (speedRivision > speedMaxRivision) ? speedMaxRivision : speedRivision += speedRivisionAddValue;
+                    speed = defaultSpeed * speedRivision;
 
-                Vector3 newPos;
-
-                newPos = nextMap.tileMap.transform.localPosition + nextMap.tileMap.size;
-                newPos.y = newPos.z = 0;
-
-                // 새 맵 활성화
-                // 현재 맵 endType 추출
-                MapManager.EntranceType mapEndType = nextMap.GetEndType();
-                nextMapIndex.Clear();
-                for (int i = 0; i < tileMapInfos[selected].maps.Length; i++)
-                {
-                    if (tileMapInfos[selected].maps[i].GetStartType() == mapEndType)
+                    if (allPassedMap % scoreItemLevelPerPassedMap == 0)
                     {
-                        // 현재 진행 중인 맵 인덱스는 빼버림
-                        if (tileMapInfos[selected].maps[i] != nextMap)
+                        GameManager.Instance.ScoreUpgrade();
+                        scoreSprite = GameManager.Instance.GetCurrentScoreSprite();
+                    }
+
+
+                    // 마지막 맵이 사라지면서 부모 오브젝트도 비활성화 함
+                    // 추가
+                    currMap.gameObject.SetActive(false);
+
+                    // 맵 전환 분기
+                    if (gridRoots.Length == 1)
+                    {
+                        // Debug.Log("Map Ea is 1");
+                    }
+                    if (usedMap > tileMapInfos[selected].maps.Length - 1 && gridRoots.Length > 1)
+                    {
+                        Debug.Log("Map Change !");
+                        usedMap = -1;
+                        int usedIndex = selected;
+                        selected = gridMapIndex[Random.Range(0, gridRoots.Length)];
+                        gridMapIndex.Remove(selected);
+                        gridMapIndex.Add(usedIndex);
+
+                        //StartCoroutine(CorDisablePrevMap(nextMap.gameObject));
+
+                        // 추가
+                        isFinalMap = true;
+                        // 추가
+                        gridRoots[selected].SetActive(true);
+                    }
+
+                    Vector3 newPos;
+
+                    newPos = nextMap.tileMap.transform.localPosition + nextMap.tileMap.size;
+                    newPos.y = newPos.z = 0;
+
+                    // 새 맵 활성화
+                    // 마지막 맵이 아닌 경우
+                    // 현재 맵 endType 추출
+                    MapManager.EntranceType mapEndType = nextMap.GetEndType();
+                    nextMapIndex.Clear();
+                    for (int i = 0; i < tileMapInfos[selected].maps.Length; i++)
+                    {
+                        if (tileMapInfos[selected].maps[i].GetStartType() == mapEndType)
                         {
-                            //Debug.Log("IN : " + i);
-                            nextMapIndex.Add(i);
-                        }
-                        else
-                        {
-                            //Debug.Log("OUT : " + i);
+                            // 현재 진행 중인 맵 인덱스는 빼버림
+                            if (tileMapInfos[selected].maps[i] != nextMap)
+                            {
+                                //Debug.Log("IN : " + i);
+                                nextMapIndex.Add(i);
+                            }
+                            else
+                            {
+                                //Debug.Log("OUT : " + i);
+                            }
                         }
                     }
+
+                    currMap = nextMap;
+
+                    if (isFinalMap == false)
+                    {
+                        nextMap = tileMapInfos[selected].maps[nextMapIndex[Random.Range(0, nextMapIndex.Count)]];
+                        nextMap.transform.localPosition = newPos;
+                        nextMap.gameObject.SetActive(true);
+                        nextMap.SetItemLocate(scoreItems, scoreSprite);
+
+                        currMapTransform = currMap.tileMap.transform;
+                        nextMapTransform = nextMap.tileMap.transform;
+                    }
+                    else
+                    {
+                        nextMap = mapBridge.ActiveMapBridge(currMap.GetEndType(), currMap.GetEndType(), gridRoots[selected].tag);
+                        nextMap.transform.localPosition = newPos;
+                        nextMap.gameObject.SetActive(true);
+
+                        currMapTransform = currMap.tileMap.transform;
+                        nextMapTransform = nextMap.transform;
+
+                        isFinalMap = false;
+
+                        StartCoroutine(CorDisablePrevMap(nextMap.gameObject));
+                    }
                 }
+                currMapTransform.Translate(Time.fixedDeltaTime * -1 * speed * speedRivision, 0, 0, Space.Self);
 
-                currMap = nextMap;
-                nextMap = tileMapInfos[selected].maps[nextMapIndex[Random.Range(0, nextMapIndex.Count)]];
-                nextMap.transform.localPosition = newPos;
-                nextMap.gameObject.SetActive(true);
-                nextMap.SetItemLocate(scoreItems);
+                nextMapTransform.Translate(Time.fixedDeltaTime * -1 * speed * speedRivision, 0, 0, Space.Self);
 
-                currMapTransform = currMap.tileMap.transform;
-                nextMapTransform = nextMap.tileMap.transform;
+                //currMap.tileMap.gameObject.transform.
+                //    Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
+
+                //nextMap.tileMap.gameObject.transform.
+                //    Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
             }
-
-            currMapTransform.Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
-
-            nextMapTransform.Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
-
-            //currMap.tileMap.gameObject.transform.
-            //    Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
-
-            //nextMap.tileMap.gameObject.transform.
-            //    Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
-
-            yield return new WaitForFixedUpdate();
-
-            // Ver 1.0
-            //for (int i = 0; i < tileMapInfos[selected].maps.Length; i++)
-            //{
-            //    if (tileMapInfos[selected].maps[i].tileMap.transform.localPosition.x <
-            //        -tileMapInfos[selected].maps[i].tileMap.size.x * 1.1f)
-            //    {
-            //        int newIndex = i;
-            //        Vector3 newPos;
-            //        if (i == 0)
-            //        {
-            //            newIndex = tileMapInfos[selected].maps.Length;
-            //        }
-
-            //        newPos = tileMapInfos[selected].maps[newIndex - 1].tileMap.transform.localPosition +
-            //            tileMapInfos[selected].maps[i].tileMap.size;
-            //        newPos.y = newPos.z = 0;
-            //        tileMapInfos[selected].maps[i].tileMap.transform.localPosition = newPos;
-
-            //        if (i + 2 >= tileMapInfos[selected].maps.Length)
-            //        {
-            //            int next = i + 2 - tileMapInfos[selected].maps.Length;
-            //            tileMapInfos[selected].maps[next].tileMap.gameObject.SetActive(true);
-            //        }
-            //        else
-            //        {
-            //            tileMapInfos[selected].maps[i + 2].tileMap.gameObject.SetActive(true);
-            //        }
-            //        tileMapInfos[selected].maps[i].tileMap.gameObject.SetActive(false);
-            //    }
-
-            //    tileMapInfos[selected].maps[i].tileMap.gameObject.transform.
-            //        Translate(Time.fixedDeltaTime * -1 * speed, 0, 0, Space.Self);
-            //}
+            yield return wait;
         }
-        //while (true)
-        //{
-        //    for (int i = 0; i < tileMaps.Length; i++)
-        //    {
-        //        if (tileMaps[i].transform.localPosition.x < -tileMaps[i].size.x * 1.1f)
-        //        {
-        //            int newIndex = i;
-        //            Vector3 newPos;
-        //            if (i == 0)
-        //            {
-        //                newIndex = tileMaps.Length;
-        //            }
+    }
 
-        //            newPos = tileMaps[newIndex - 1].transform.localPosition + tileMaps[i].size;
-        //            newPos.y = newPos.z = 0;
-        //            tileMaps[i].transform.localPosition = newPos;
+    // 추가
+    IEnumerator CorDisablePrevMap(GameObject mapObject)
+    {
+        WaitForSeconds wait = new WaitForSeconds(1.0f);
+        while (true)
+        {
+            if(mapObject.activeSelf == false)
+            {
+                mapObject.transform.parent.gameObject.SetActive(false);
+                yield break;
+            }
+            yield return wait;
+        }
+    }
 
-        //            if (i + 2 >= tileMaps.Length)
-        //            {
-        //                Debug.Log(i);
-        //                int next = i + 2 - tileMaps.Length;
-        //                tileMaps[next].gameObject.SetActive(true);
-        //            }
-        //            else
-        //            {
-        //                tileMaps[i + 2].gameObject.SetActive(true);
-        //            }
-        //            tileMaps[i].gameObject.SetActive(false);
-        //        }
-
-        //        tileMaps[i].transform.Translate(Time.fixedDeltaTime * -2.0f, 0, 0, Space.Self);
-        //    }
-        //    yield return new WaitForFixedUpdate();
-        //}
+    public void GameOver()
+    {
+        gameOver = true;
+        StopCoroutine(coMoveMap);
     }
 }

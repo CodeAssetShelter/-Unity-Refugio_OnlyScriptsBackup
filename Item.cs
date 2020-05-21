@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Item : MonoBehaviour
 {
-    public int myScore = 10;
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("GameManager"))
@@ -18,7 +17,8 @@ public class Item : MonoBehaviour
             transform.SetParent(MapManager.Instance.transform);
             transform.position = new Vector3(0, 40, 10);
             gameObject.SetActive(false);
-            GameManager.Instance.ScoreAdd(myScore);
+
+            GameManager.Instance.ScoreAdd();
         }
     }
 }
