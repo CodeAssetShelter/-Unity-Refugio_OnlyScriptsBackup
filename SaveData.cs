@@ -1,8 +1,14 @@
-﻿using System.Collections;
+﻿//using GooglePlayGames;
+//using GooglePlayGames.BasicApi;
+//using GooglePlayGames.BasicApi.SavedGame;
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 using System;
+using System.Text;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 
@@ -35,13 +41,48 @@ public class SaveData : MonoBehaviour
         public int bestScore;
     }
 
-    //public Planes gamePlanes;
-    private List<ShopManager.ItemInfo>purchasedData;
-    private UserData userData;
+    [Serializable]
+    public class CloudGameData
+    {
+        public CloudGameData()
+        {
+            userData = new UserData();
+            purchasedData = new List<ShopManager.ItemInfo>();
+        }
+        public UserData userData;
+        public List<ShopManager.ItemInfo> purchasedData;
+    }
 
+    //public Planes gamePlanes;
+    private List<ShopManager.ItemInfo> purchasedData;
+    private UserData userData;
+    private CloudGameData cloudGameData;
+
+    private void Awake()
+    {
+        purchasedData = new List<ShopManager.ItemInfo>();
+        userData = new UserData();
+        cloudGameData = new CloudGameData();
+        //Invoke("TEST", 1.0f);
+    }
+
+    private void TEST()
+    {
+        cloudGameData.purchasedData = purchasedData;
+        cloudGameData.userData = userData;
+
+        var dat = JsonUtility.ToJson(cloudGameData);
+        FileStream file;
+        file = new FileStream(Application.persistentDataPath + "/RefugioPurchasedAndShop.bin",
+            FileMode.Create);
+
+        byte[] data = Encoding.UTF8.GetBytes(dat);
+        file.Write(data, 0, data.Length);
+        file.Close();
+    }
 
     // Save Purchased Data
-    public void SavePurchasedShopData(List<ShopManager.ItemInfo>itemInfoList)
+    public void SavePurchasedShopData(List<ShopManager.ItemInfo> itemInfoList)
     {
         BinaryFormatter binary = new BinaryFormatter();
         FileStream file;
@@ -49,6 +90,8 @@ public class SaveData : MonoBehaviour
 
         binary.Serialize(file, itemInfoList);
 
+        cloudGameData.purchasedData = itemInfoList;
+        this.purchasedData = itemInfoList;
         //saveData = data;
         file.Close();
     }
@@ -58,7 +101,7 @@ public class SaveData : MonoBehaviour
     {
         //Debug.Log(Application.persistentDataPath);
         if (File.Exists(Application.persistentDataPath + "/RefugioPurchasedAndShop.dat") == false) return null;
-        
+
         BinaryFormatter binary = new BinaryFormatter();
         FileStream file = File.Open(Application.persistentDataPath + "/RefugioPurchasedAndShop.dat", FileMode.Open);
         List<ShopManager.ItemInfo> output = new List<ShopManager.ItemInfo>();
@@ -66,10 +109,11 @@ public class SaveData : MonoBehaviour
         {
             output = new List<ShopManager.ItemInfo>((List<ShopManager.ItemInfo>)binary.Deserialize(file));
             //(List<ShopManager.ItemInfo>())binary.Deserialize(file);
-                //(OnePlaneData)binary.Deserialize(file);
+            //(OnePlaneData)binary.Deserialize(file);
+            file.Close();
             return output;
         }
-
+        file.Close();
         return null;
     }
 
@@ -87,9 +131,12 @@ public class SaveData : MonoBehaviour
         userData = user;
 
         binary.Serialize(file, userData);
-
-        //saveData = data;
         file.Close();
+
+        CloudGameData cloudGameDataTemp = new CloudGameData();
+        cloudGameDataTemp.userData.bestScore = myScore;
+        cloudGameDataTemp.userData.coins = myCoins;
+        //saveData = data;
     }
 
     // Load Area
@@ -106,9 +153,10 @@ public class SaveData : MonoBehaviour
             userData = (UserData)binary.Deserialize(file);
             //(List<ShopManager.ItemInfo>())binary.Deserialize(file);
             //(OnePlaneData)binary.Deserialize(file);
+            file.Close();
             return true;
         }
-
+        file.Close();
         return false;
     }
 
@@ -134,29 +182,74 @@ public class SaveData : MonoBehaviour
         binary.Serialize(file, data);
 
         userData = data;
-
         file.Close();
     }
 
-    
+
     public void SaveVolumeData()
     {
         PlayerPrefs.SetFloat("Volume_Bgm", SoundManager.Instance.bgmVolume);
         PlayerPrefs.SetFloat("Volume_Effect", SoundManager.Instance.effectVolume);
     }
     public void LoadVolumeData()
-    {     
-        SoundManager.Instance.SetVolume(PlayerPrefs.GetFloat("Volume_Bgm"), PlayerPrefs.GetFloat("Volume_Effect"));
+    {
+        float bgm = 
+            (PlayerPrefs.HasKey("Volume_Bgm") == true) ? 
+            PlayerPrefs.GetFloat("Volume_Bgm") : 0.5f;
+        float effect = 
+            (PlayerPrefs.HasKey("Volume_Bgm") == true) ? 
+            PlayerPrefs.GetFloat("Volume_Bgm") : 0.5f;
+
+        SoundManager.Instance.SetVolume(bgm, effect);
     }
 
 
     public int LoadBestScore()
     {
-       return userData.bestScore;
+        return userData.bestScore;
     }
 
     public int LoadCoins()
     {
         return userData.coins;
+    }
+
+    public bool SetCloudSaveDataToLocalData(CloudGameData cloudGameData)
+    {
+        if (this.cloudGameData == null)
+        {
+            Debug.Log("cloud data is null");
+            return false;
+        }
+        if (cloudGameData == null)
+        {
+            Debug.Log("Loaded Cloud Data is not valid");
+            return false;
+        }
+        this.cloudGameData = cloudGameData;
+        userData = cloudGameData.userData;
+        purchasedData = cloudGameData.purchasedData;
+
+        MainManager.Instance.SetDataFromCloudSave(ref this.cloudGameData);
+        FindObjectOfType<ShopManager>().itemInfoList = this.purchasedData;
+        return true;
+    }
+    public string GetCloudSaveData()
+    {
+        if (userData == null)
+        {
+            Debug.Log("userData is not valid");
+            return null;
+        }
+        if (purchasedData == null)
+        {
+            Debug.Log("purchasedData is not valid");
+            return null;
+        }
+        cloudGameData.purchasedData = purchasedData;
+        cloudGameData.userData = userData;
+
+        var dat = JsonUtility.ToJson(cloudGameData);
+        return dat;
     }
 }

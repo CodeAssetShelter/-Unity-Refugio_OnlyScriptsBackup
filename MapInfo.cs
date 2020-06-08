@@ -16,6 +16,8 @@ public class MapInfo : MonoBehaviour
     public GameObject itemBatchContainer;
     public ItemLocator[] itemLocator;
 
+    [HideInInspector]
+    public bool isFinalMap = false;
 
     Transform container;
     private void Awake()
@@ -29,6 +31,7 @@ public class MapInfo : MonoBehaviour
             itemLocator[i] = container.GetChild(i).GetComponent<ItemLocator>();
         }
     }
+
     public MapManager.EntranceType GetStartType()
     {
         return startType;
@@ -39,7 +42,7 @@ public class MapInfo : MonoBehaviour
         return endType;
     }
 
-    public void SetItemLocate(List<GameObject> scoreItems)
+    public void SetItemLocate(List<SpriteRenderer> scoreItems, Sprite sprite)
     {
         if (itemBatchContainer == null) return;
 
@@ -49,7 +52,7 @@ public class MapInfo : MonoBehaviour
         for (int i = 0; i < container.childCount; i++)
         {
             if (itemLocator[i] != null)
-                itemLocator[i].SetItem(scoreItems);
+                itemLocator[i].SetItem(scoreItems, sprite);
         }
     }
 }

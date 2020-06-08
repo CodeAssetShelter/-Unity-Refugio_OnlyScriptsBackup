@@ -22,18 +22,20 @@ public class LoadSceneManager : MonoBehaviour
     private DisplayPlayer player;
     private static Sprite[] playerSprites;
     private static Coroutine routine;
+    private static bool toMainMenu = false;
+
     private void Start()
     {
        routine = StartCoroutine(LoadScene());
     }
 
-    public static void LoadScene(string sceneName, Sprite[] sprites = null)
+    public static void LoadScene(string sceneName, Sprite[] sprites = null, bool isGotoMainMenu = false)
     {
         if (sprites != null)
         {
             playerSprites = sprites;
         }
-
+        toMainMenu = isGotoMainMenu;
         nextScene = sceneName;
   
         SceneManager.LoadScene(sceneNames.loading);
@@ -85,6 +87,11 @@ public class LoadSceneManager : MonoBehaviour
                 if (timer >= 1.0f)
                 {
                     op.allowSceneActivation = true;
+
+                    if (toMainMenu == true)
+                    {
+                        MainManager.Instance.ReLoad(nextScene);
+                    }
                     yield break;
                 }
             }

@@ -57,6 +57,7 @@ public class MapManager : MonoBehaviour
 
     [Header("- Speed")]
     public float speed = 2.0f;
+    public bool isStop = false;
     private float defaultSpeed = 1.5f;
 
 
@@ -70,7 +71,8 @@ public class MapManager : MonoBehaviour
     private float speedRivision = 1.0f;
     private float speedRivisionAddValue = 0.01f;
     private float speedMaxRivision = 2.0f;
-
+    private float patternRivision = 1.0f;
+    private float patternRivisionMin = 0.5f;
 
     // Score Upgrade Value
     // 맵 x 개를 지났을 때 1 단계 업그레이드
@@ -82,6 +84,7 @@ public class MapManager : MonoBehaviour
     List<int> gridMapIndex = new List<int>();
     int selected = 0;
     int selectedMap = 0;
+    int prevSelectedMap = 0;
     int selectedNextMap = 0;
     int usedMap = 0;
 
@@ -101,7 +104,12 @@ public class MapManager : MonoBehaviour
             item.gameObject.SetActive(false);
         }
 
-        speed = MainManager.Instance.GetBaseMapSpeed();
+        if (MainManager.Instance != null)
+            speed = MainManager.Instance.GetBaseMapSpeed();
+        else
+        {
+            speed = 1;
+        }
 
         scoreSprite = GameManager.Instance.GetCurrentScoreSprite();
         defaultSpeed = speed;
@@ -142,10 +150,10 @@ public class MapManager : MonoBehaviour
         }
 
         selected = gridMapIndex[Random.Range(0, gridRoots.Length)];
-
         // Debug
         // 레트로, 자연, 흑목, 수중, 동굴
         selected = 0;
+        prevSelectedMap = selected;
 
         Vector3 newPos;
 
@@ -196,14 +204,14 @@ public class MapManager : MonoBehaviour
         nextMapTransform = nextMap.tileMap.transform;
         usedMap++;
 
-        coMoveMap = StartCoroutine(CoroutineMoveMap());
+        if (!isStop)
+            coMoveMap = StartCoroutine(CoroutineMoveMap());
     }
 
     IEnumerator CoroutineMoveMap()
     {
         WaitForFixedUpdate wait = new WaitForFixedUpdate();
         int allPassedMap = 0;
-
         while (true)
         {
             if (gameOver == false)
@@ -214,6 +222,8 @@ public class MapManager : MonoBehaviour
                     allPassedMap++;
                     speedRivision = (speedRivision > speedMaxRivision) ? speedMaxRivision : speedRivision += speedRivisionAddValue;
                     speed = defaultSpeed * speedRivision;
+
+                    patternRivision = (patternRivision < patternRivisionMin) ? patternRivisionMin : patternRivision -= speedRivisionAddValue;
 
                     if (allPassedMap % scoreItemLevelPerPassedMap == 0)
                     {
@@ -236,7 +246,9 @@ public class MapManager : MonoBehaviour
                         Debug.Log("Map Change !");
                         usedMap = -1;
                         int usedIndex = selected;
+                        prevSelectedMap = usedIndex;
                         selected = gridMapIndex[Random.Range(0, gridRoots.Length)];
+                        ///Debug.Log("New Map index : " + selected);
                         gridMapIndex.Remove(selected);
                         gridMapIndex.Add(usedIndex);
 
@@ -280,6 +292,7 @@ public class MapManager : MonoBehaviour
                     if (isFinalMap == false)
                     {
                         nextMap = tileMapInfos[selected].maps[nextMapIndex[Random.Range(0, nextMapIndex.Count)]];
+
                         nextMap.transform.localPosition = newPos;
                         nextMap.gameObject.SetActive(true);
                         nextMap.SetItemLocate(scoreItems, scoreSprite);
@@ -298,7 +311,16 @@ public class MapManager : MonoBehaviour
 
                         isFinalMap = false;
 
-                        StartCoroutine(CorDisablePrevMap(nextMap.gameObject));
+                        if (prevSelectedMap != selected)
+                        {
+                            //Debug.Log("NotSame : " + prevSelectedMap + " : " + selected);
+                            StartCoroutine(CorDisablePrevMap(currMap.gameObject));
+                            StartCoroutine(CorDisablePrevMap(nextMap.gameObject));
+                        }
+                        else
+                        {
+                            //Debug.Log("Same : " + prevSelectedMap + " : " + selected);
+                        }
                     }
                 }
                 currMapTransform.Translate(Time.fixedDeltaTime * -1 * speed * speedRivision, 0, 0, Space.Self);
@@ -323,12 +345,20 @@ public class MapManager : MonoBehaviour
         {
             if(mapObject.activeSelf == false)
             {
+                //Debug.Log("name : " + mapObject.name);
                 mapObject.transform.parent.gameObject.SetActive(false);
                 yield break;
             }
             yield return wait;
         }
     }
+
+
+    public float GetPatternRivision()
+    {
+        return patternRivision;
+    }
+
 
     public void GameOver()
     {

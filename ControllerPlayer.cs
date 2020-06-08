@@ -180,10 +180,12 @@ public class ControllerPlayer : MonoBehaviour
     public void ShieldCollideBonus()
     {
         GameManager.Instance.ScoreAdd(10);
+        playerTimeBar.AddTimerBonus(5);
+
         if (coShieldInvincible != null) StopCoroutine(coShieldInvincible);
         coShieldInvincible = StartCoroutine(CorShieldInvincible());
     }
-    IEnumerator CorShieldInvincible()
+    IEnumerator CorShieldInvincible(float time = 1)
     {
         float timer = 0;
         shield_invinclble = true;
@@ -192,7 +194,7 @@ public class ControllerPlayer : MonoBehaviour
         int colorSwitcherIndex = 0;
 
         spriteBodyRenderer.color = Color.white;
-        while (timer < 1.0f)
+        while (timer < time)
         {
             spriteBodyRenderer.color = colorSwitch[colorSwitcherIndex++ % colorSwitch.Length];
             timer += Time.deltaTime;
@@ -238,7 +240,8 @@ public class ControllerPlayer : MonoBehaviour
             if (shield_invinclble == false && playerStatus.invincible == false)
             {
                 if (coShieldInvincible == null)
-                    coShieldInvincible = StartCoroutine(CorShieldInvincible());
+                    coShieldInvincible = StartCoroutine(CorShieldInvincible(0.5f));
+                playerTimeBar.GetDamage();
                 PlaySound(audioClipGetDamaged);
                 StartCoroutine(CorGetDamageShakeCamera());
             }
@@ -299,6 +302,8 @@ public class ControllerPlayer : MonoBehaviour
 
     private void PlaySound(AudioClip clip, float rivision = 1)
     {
+        if (Time.timeScale == 0) return;
+
         float effectVolume;
         effectVolume = (SoundManager.Instance == null) ? 1 : SoundManager.Instance.effectVolume * rivision;
         audioSource.PlayOneShot(clip, effectVolume);
@@ -317,13 +322,13 @@ public class ControllerPlayer : MonoBehaviour
     {
         spriteBodyRenderer.color = new Color(1, 1, 1, 0);
         GameManager.Instance.GameOver();
-        onGameOver();
+        onGameOver?.Invoke();
     }
     public void SetAnimIndex(int i)
     {
-        if (playerSprites == null)
+        if (playerSprites[i] == null)
         {
-            Debug.Log("is null");
+            //Debug.Log("is null");
             return;
         }
         spriteBodyRenderer.sprite = playerSprites[i];

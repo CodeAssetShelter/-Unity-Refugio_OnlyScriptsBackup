@@ -21,14 +21,23 @@ public class TimeBar : MonoBehaviour
 
     System.Action callbackGameOver;
 
+    int count = 0;
+
+    public void Start()
+    {
+        count = 0;
+    }
+
     public void InitTimeBar(float lifeTime, System.Action callbackGameOver)
     {
+        CanvasScaler canvasScaler = transform.parent.GetComponent<CanvasScaler>();
         ControllerPlayer.onGameOver += OnGameOver;
         this.callbackGameOver = callbackGameOver;
 
         fullHpPos = timeBarProgress.localPosition;
 
-        timeBarGrid.cellSize = new Vector2(baseTimeBarLength + lifeTime, timeBarGrid.cellSize.y);
+        float x = (baseTimeBarLength + lifeTime > canvasScaler.referenceResolution.x) ? canvasScaler.referenceResolution.x : baseTimeBarLength + lifeTime;
+        timeBarGrid.cellSize = new Vector2(x , timeBarGrid.cellSize.y);
         Vector2 newSize = timeBarProgress.sizeDelta;
         newSize.x = timeBarGrid.cellSize.x;
         timeBarProgress.sizeDelta = newSize;
@@ -48,8 +57,6 @@ public class TimeBar : MonoBehaviour
 
     //    CorGetTimeBar = StartCoroutine(CorRunTimeBar());
     //}
-
-    int count = 0;
     IEnumerator CorRunTimeBar()
     {
         float cellSize = timeBarGrid.cellSize.x;
@@ -61,8 +68,6 @@ public class TimeBar : MonoBehaviour
         Vector3 pos = timeBarProgress.localPosition;
         heartAnimator.speed = heartAnimationSpeed;
         float substractSpeed = heartAnimationSpeed / lifeTime;
-
-        count = 0;
 
         // 60 대신에 LifeTime 이 들어갈것
         while (count < lifeTime)
@@ -76,15 +81,36 @@ public class TimeBar : MonoBehaviour
             yield return new WaitForSeconds(1.0f);
         }
 
+        pos = timeBarProgress.localPosition;
+        pos.x = fullHpPos.x - (timeBarFallBackPerFrame * lifeTime);
+        timeBarProgress.localPosition = pos;
+
         callbackGameOver();
         heartAnimator.speed = 0;
     }
 
-    public void AddTimerBonus(int count)
+    public void AddTimerBonus(float percentageTT)
     {
-        this.count -= count + 1;
+        this.count -= (int)(lifeTime * 0.01f * percentageTT);
         if (count < 0) count = 0;
 
+        CorRunTimeBar().MoveNext();
+    }
+    public void AddTimerBonus(int healValue)
+    {
+        this.count -= healValue;
+        if (count < 0) count = 0;
+
+        CorRunTimeBar().MoveNext();
+    }
+    public void GetDamage()
+    {
+        int damage = (int)(lifeTime * 0.1f);;
+        count += damage;
+        if (count > lifeTime)
+        {
+            count = (int)lifeTime;
+        }
         CorRunTimeBar().MoveNext();
     }
 

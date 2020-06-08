@@ -20,6 +20,6 @@ public class Buttons : MonoBehaviour
         buttonStart.onClick.AddListener(delegate { MainManager.Instance.ChangeSceneGamePlay(); });
 
         buttonOption.onClick.AddListener(delegate { SoundManager.Instance.ActiveUiClickSound(); });
-        buttonOption.onClick.AddListener(() => GameObject.FindWithTag("UIOption").transform.GetChild(0).gameObject.SetActive(true));
+        buttonOption.onClick.AddListener(() => GameObject.FindWithTag("UIOption").transform.Find("OPTIONS (ActiveThis)").gameObject.SetActive(true));
     }
 }

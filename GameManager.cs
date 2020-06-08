@@ -80,7 +80,6 @@ public class GameManager : MonoBehaviour
 
     [Header("- TimeScale")]
     public ObscuredFloat timeScale = 1.0f;
-
     private ObscuredInt scoreItemValue = 10;
 
     // Score Value
@@ -102,6 +101,7 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void OnEnable()
     {
+        MainManager.Instance.ActivePauseButton();
         scoreText.text = "" + 0;
         
         /* Smoothing Item Using Effect Values (Not Use)
@@ -206,9 +206,19 @@ public class GameManager : MonoBehaviour
     public void SetPlaySettings()
     {
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<ControllerPlayer>();
-        playerInfo = MainManager.Instance.GetPlayerInfo();
-        //Debug.Log(playerInfo.price);
-        player.SetPlayerInfo(playerInfo.shieldDuration, MainManager.Instance.GetPlayerSprite(), playerInfo.itemSlot, playerInfo.lifeTime);
+        if (MainManager.Instance != null)
+        {
+            playerInfo = MainManager.Instance.GetPlayerInfo();
+            player.SetPlayerInfo(playerInfo.shieldDuration, MainManager.Instance.GetPlayerSprite(), playerInfo.itemSlot, playerInfo.lifeTime);
+        }
+        else
+        {
+            Sprite mySpr = Sprite.Create(Texture2D.whiteTexture, new Rect(Vector2.zero, new Vector2(1, 1)), Vector2.zero);
+            Sprite[] spr = { mySpr, mySpr, mySpr };
+            playerInfo = new ShopManager.ItemInfo();
+            playerInfo.lifeTime = 600;
+            player.SetPlayerInfo(playerInfo.shieldDuration, spr, playerInfo.itemSlot, playerInfo.lifeTime);
+        }
     }
 
     public void SetTimeScale(float timeScale)
@@ -245,7 +255,7 @@ public class GameManager : MonoBehaviour
     public void ScoreUpgrade()
     {
         scoreItemValue++;
-        if (currentScoreIndex > scoreSprites.Length - 1)
+        if (currentScoreIndex >= scoreSprites.Length - 1)
         {
             currentScoreIndex = scoreSprites.Length - 1;
         }
@@ -368,7 +378,7 @@ public class GameManager : MonoBehaviour
                     yield break;
 
                 case ItemType.LifePotion:
-                    player.playerTimeBar.AddTimerBonus((int)info.effectValue);
+                    player.playerTimeBar.AddTimerBonus(info.effectValue);
                     yield break;
 
                 // 이하 액티브
@@ -411,7 +421,16 @@ public class GameManager : MonoBehaviour
             {
                 timer += Time.deltaTime;
                 holder.fillAmount -= Time.deltaTime / info.duration;
-                yield return null;
+
+                // 유지해야만 하는 아이템의 경우 여기에 넣어서 유지한다
+                switch (info.type)
+                {
+                    case ItemType.SlowMotion:
+                        Time.timeScale *= info.effectValue;
+                        break;
+                }
+
+                yield return Time.deltaTime;
             }
             holder.fillAmount = 0;
 
@@ -500,18 +519,13 @@ public class GameManager : MonoBehaviour
 
     public void GameOver()
     {
+
         MapManager.Instance.GameOver();
         GameOverItemAllStop();
         screenBlackFog.SetActive(true);
 
         MainManager.Instance.ApplyGameResult(myEarnedCoin, myScore);
-
-        StartCoroutine(CorLoadSceneMainMenu());
-    }
-    IEnumerator CorLoadSceneMainMenu()
-    {
-        yield return new WaitForSeconds(1.0f);
-        MainManager.Instance.ReLoad("MainMenu");
-        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        MainManager.Instance.SetOptions(false);
+        MainManager.Instance.LoadSceneMainMenu();
     }
 }
