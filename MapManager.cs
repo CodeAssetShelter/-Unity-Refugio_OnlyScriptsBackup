@@ -43,6 +43,9 @@ public class MapManager : MonoBehaviour
     public TileMapInfo[] tileMapInfos;
     public MapBridge mapBridge;
 
+    [Header("- Map Musics")]
+    public AudioClip[] musicBGMs;
+
     [Space(20)]
     public SpriteRenderer scoreItemPrefab;
     private List<SpriteRenderer> scoreItems = new List<SpriteRenderer>();
@@ -92,6 +95,8 @@ public class MapManager : MonoBehaviour
     Coroutine coMoveMap;
     bool gameOver = false;
 
+    SoundManager soundManager;
+
     //public Tilemap[] tileMaps;
     // Start is called before the first frame update
     private void Awake()
@@ -113,6 +118,8 @@ public class MapManager : MonoBehaviour
 
         scoreSprite = GameManager.Instance.GetCurrentScoreSprite();
         defaultSpeed = speed;
+
+        soundManager = FindObjectOfType<SoundManager>();
 
         StartCoroutine(CoroutineMakeObjects());
     }
@@ -152,8 +159,12 @@ public class MapManager : MonoBehaviour
         selected = gridMapIndex[Random.Range(0, gridRoots.Length)];
         // Debug
         // 레트로, 자연, 흑목, 수중, 동굴
-        selected = 0;
+        //selected = 0;
         prevSelectedMap = selected;
+
+        // selected 된 맵 인덱스의 BGM 을 재생한다
+        PlayMusic(selected);
+
 
         Vector3 newPos;
 
@@ -243,7 +254,7 @@ public class MapManager : MonoBehaviour
                     }
                     if (usedMap > tileMapInfos[selected].maps.Length - 1 && gridRoots.Length > 1)
                     {
-                        Debug.Log("Map Change !");
+                        //Debug.Log("Map Change !");
                         usedMap = -1;
                         int usedIndex = selected;
                         prevSelectedMap = usedIndex;
@@ -258,6 +269,9 @@ public class MapManager : MonoBehaviour
                         isFinalMap = true;
                         // 추가
                         gridRoots[selected].SetActive(true);
+
+                        // selected 된 맵 인덱스의 BGM 을 재생한다
+                        PlayMusic(selected);
                     }
 
                     Vector3 newPos;
@@ -364,5 +378,14 @@ public class MapManager : MonoBehaviour
     {
         gameOver = true;
         StopCoroutine(coMoveMap);
+    }
+
+    private void PlayMusic(int musicIndex)
+    {
+        if (soundManager == null || musicIndex > musicBGMs.Length - 1) return;
+        else
+        {
+            soundManager.ActiveBGM(musicBGMs[musicIndex]);
+        }
     }
 }

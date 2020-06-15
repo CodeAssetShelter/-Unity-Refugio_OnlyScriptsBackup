@@ -101,7 +101,8 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void OnEnable()
     {
-        MainManager.Instance.ActivePauseButton();
+        if (MainManager.Instance != null)
+            MainManager.Instance.ActivePauseButton();
         scoreText.text = "" + 0;
         
         /* Smoothing Item Using Effect Values (Not Use)
@@ -226,18 +227,18 @@ public class GameManager : MonoBehaviour
         Time.timeScale = timeScale;
     }
 
-    public void OnGUI()
-    {
-        GUIStyle style = new GUIStyle();
+    //public void OnGUI()
+    //{
+    //    GUIStyle style = new GUIStyle();
 
-        Rect rect = new Rect(0, 0, Screen.width, Screen.height);
-        style.fontSize = (int)(Screen.height * 0.06);
-        style.normal.textColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-        //float fps = 1.0f / Time.deltaTime;
-        float fps = Time.realtimeSinceStartup;
-        string text = string.Format("{0:0.}", fps);
-        GUI.Label(rect, text, style);
-    }
+    //    Rect rect = new Rect(0, 0, Screen.width, Screen.height);
+    //    style.fontSize = (int)(Screen.height * 0.06);
+    //    style.normal.textColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+    //    //float fps = 1.0f / Time.deltaTime;
+    //    float fps = Time.realtimeSinceStartup;
+    //    string text = string.Format("{0:0.}", fps);
+    //    GUI.Label(rect, text, style);
+    //}
 
     public void ScoreAdd(int rivision = 1)
     {
@@ -247,7 +248,19 @@ public class GameManager : MonoBehaviour
             effectVolume = (SoundManager.Instance == null) ? 1 : SoundManager.Instance.effectVolume * 0.2f;
             audioSource.PlayOneShot(audioClipGetItem, effectVolume);
         }
+        // Add Time Bonus
+        if (rivision == -1)
+        {
+            float effectVolume;
+            effectVolume = (SoundManager.Instance == null) ? 1 : SoundManager.Instance.effectVolume * 0.2f;
+            audioSource.PlayOneShot(audioClipGetItem, effectVolume);
+            rivision = 1;
 
+            if (player != null)
+            {
+                player.playerTimeBar.AddTimerBonus(2);
+            }
+        }
         myScore += scoreItemValue * rivision;
         scoreText.text = "" + myScore;
     }
@@ -319,6 +332,9 @@ public class GameManager : MonoBehaviour
 
     public void SetItemSlot(int itemType)
     {
+        if (player != null)
+            player.playerTimeBar.AddTimerBonus(2);
+
         if (itemType > (int)ItemType.StateCount) itemType -= 1;
         if (itemInfos[itemType].useImmediately == true)
         {
@@ -396,7 +412,7 @@ public class GameManager : MonoBehaviour
                     break;
 
                 case ItemType.SlowMotion:
-                    Time.timeScale *= info.effectValue;
+                    Time.timeScale = info.effectValue;
                     ItemPostProcess(true);
                     break;
             }
@@ -426,7 +442,8 @@ public class GameManager : MonoBehaviour
                 switch (info.type)
                 {
                     case ItemType.SlowMotion:
-                        Time.timeScale *= info.effectValue;
+                        if (Time.timeScale != 0)
+                            Time.timeScale = info.effectValue;
                         break;
                 }
 
@@ -460,7 +477,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case ItemType.SlowMotion:
-                Time.timeScale = timeScale;
+                Time.timeScale = 1;
                 ItemPostProcess(false);
                 break;
         }
@@ -524,8 +541,11 @@ public class GameManager : MonoBehaviour
         GameOverItemAllStop();
         screenBlackFog.SetActive(true);
 
-        MainManager.Instance.ApplyGameResult(myEarnedCoin, myScore);
-        MainManager.Instance.SetOptions(false);
-        MainManager.Instance.LoadSceneMainMenu();
+        if (MainManager.Instance != null)
+        {
+            MainManager.Instance.ApplyGameResult(myEarnedCoin, myScore);
+            MainManager.Instance.SetOptions(false);
+            MainManager.Instance.LoadSceneMainMenu();
+        }
     }
 }

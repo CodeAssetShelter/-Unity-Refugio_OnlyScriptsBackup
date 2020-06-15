@@ -92,14 +92,16 @@ public class MainManager : MonoBehaviour
         {
             myBestScore = 0;
             myCoins = 200;
-            SaveData.Instance.SaveUserData(myCoins, myBestScore);
         }
 
         textMyScore.text = "" + myBestScore;
 
+        SaveData.Instance.SaveUserData(myCoins, myBestScore);
+        SoundManager.Instance.ActiveBGM(SoundManager.Instance.bgm);
         AdManager.Instance.NewAwake();
         options.SetOptionMode(false);
     }
+
     private void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<DisplayPlayer>();        
@@ -121,7 +123,9 @@ public class MainManager : MonoBehaviour
 
         textMyScore.text = "" + myBestScore;
 
+        SaveData.Instance.SaveUserData(myCoins, myBestScore);
         InvokeRepeating("RandomizeKeys", 1, 1);
+
     }
     private void RandomizeKeys()
     {
@@ -137,6 +141,11 @@ public class MainManager : MonoBehaviour
         textMyScore.transform.parent.gameObject.SetActive(active);
         textMyCoin.transform.parent.gameObject.SetActive(active);
     }
+
+    public ref ObscuredInt GetMyScore()
+    {
+        return ref myBestScore;
+    }
     public ref ObscuredInt GetMyCoin()
     {
         return ref myCoins;
@@ -144,15 +153,17 @@ public class MainManager : MonoBehaviour
     public void SetMyCoin(ObscuredInt value)
     {
         myCoins = value;
+        SaveData.Instance.SaveUserData(myCoins, myBestScore);
     }
 
-    public void SetDataFromCloudSave(ref SaveData.CloudGameData data)
+    public void SetDataFromCloudSave(SaveData.CloudGameData data)
     {
         if (textMyCoin == null) textMyCoin = GameObject.Find("TextMyCoins").GetComponent<Text>();
         if (textMyScore == null) textMyScore = GameObject.Find("TextMyScore").GetComponent<Text>();
 
         myCoins = data.userData.coins;
         myScore = data.userData.bestScore;
+        myBestScore = myScore;
         textMyCoin.text = "" + myCoins;
         textMyScore.text = "" + myScore;
     }
@@ -182,6 +193,8 @@ public class MainManager : MonoBehaviour
 
     public void ActivePauseButton()
     {
+        if (buttonPause == null) return;
+
         if (buttonPause.activeSelf == false)
             buttonPause.SetActive(true);
         SetOptions(true);

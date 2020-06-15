@@ -45,6 +45,8 @@ public class LoadSceneManager : MonoBehaviour
     {
         yield return null;
 
+        Time.timeScale = 1;
+
         AsyncOperation op = SceneManager.LoadSceneAsync(nextScene);
         op.allowSceneActivation = false;
 

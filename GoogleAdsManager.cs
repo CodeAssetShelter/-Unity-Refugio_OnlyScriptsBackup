@@ -26,8 +26,8 @@ public class GoogleAdsManager : MonoBehaviour
     private void RequestInterstitial()
     {
 #if UNITY_ANDROID
-        //string adUnitId = "ca-app-pub-9184116991089390/8972728738";
-        string adUnitId = "ca-app-pub-3940256099942544/1033173712";
+        string adUnitId = "ca-app-pub-9184116991089390/8972728738";
+        //string adUnitId = "ca-app-pub-3940256099942544/1033173712";
 #elif UNITY_IPHONE
         string adUnitId = "ca-app-pub-3940256099942544/4411468910";
 #else

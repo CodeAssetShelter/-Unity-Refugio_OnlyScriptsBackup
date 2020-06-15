@@ -1,7 +1,7 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using GoogleMobileAds.Api;
 using UnityEngine.UI;
+using System;
 
 // Example script showing how to invoke the Google Mobile Ads Unity plugin.
 public class AdManager : MonoBehaviour
@@ -43,26 +43,25 @@ public class AdManager : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("Awake Start");
         rewardButton = GameObject.FindWithTag("UIShop").transform.GetChild(0).Find("Reward Button").GetComponent<Button>();
-        Debug.Log("Awake 1");
         rewardButton.onClick.AddListener(() => ShowRewardedAd());
 
-        GameObject.Find("Button (0)").GetComponent<Button>().onClick.AddListener(() => ShowRewardedAd());
-        Debug.Log("Awake 2");
+        //GameObject.Find("Button (0)").GetComponent<Button>().onClick.AddListener(() => ShowRewardedAd());
         CreateAndLoadRewardedAd();
-        Debug.Log("Awake 3");
         RequestInterstitial();
     }
 
     public void NewAwake()
     {
-        Debug.Log("NewAwake");
         rewardButton = GameObject.FindWithTag("UIShop").transform.GetChild(0).Find("Reward Button").GetComponent<Button>();
         rewardButton.onClick.AddListener(() => ShowRewardedAd());
-        CreateAndLoadRewardedAd();
-        //RequestInterstitial();
-        ShowInterstitial();
+
+        if (UnityEngine.Random.Range(0, 100) < 75)
+        {
+            CreateAndLoadRewardedAd();
+            //RequestInterstitial();
+            ShowInterstitial();
+        }
         rewardTimer = StartCoroutine(RewardTimer());
     }
 
@@ -80,19 +79,12 @@ public class AdManager : MonoBehaviour
         string appId = "unexpected_platform";
 #endif
 
-        Debug.Log("Start");
         MobileAds.SetiOSAppPauseOnBackground(true);
-
-        Debug.Log("Start 1");
         // Initialize the Google Mobile Ads SDK.
         //MobileAds.Initialize(InitializationStatus => { });
         MobileAds.Initialize(appId);
-
-        Debug.Log("Start 2");
         //rewardTimer = StartCoroutine(RewardTimer());
         //StartCoroutine(IntersitialTimer());
-
-        Debug.Log("Start 3");
         //Invoke("ShowRewardedAd", 10);
 
     }
@@ -125,7 +117,7 @@ public class AdManager : MonoBehaviour
             if (this.rewardedAd.IsLoaded() == true)
             {
                 rewardButton.gameObject.SetActive(true);
-                state = "isLoaded in RewardTimer";
+                //state = "isLoaded in RewardTimer";
             }
             yield return new WaitForSeconds(1.0f);
         }
@@ -174,16 +166,16 @@ public class AdManager : MonoBehaviour
     //    GUI.Label(rect2, text2, style);
     //}
 
-    public Text st1, st2;
-    string state = "0", state2 = "0";
-    public void Update()
-    {
-        // Calculate simple moving average for time to render screen. 0.1 factor used as smoothing
-        // value.
-        st1.text = state;
-        st2.text = state2;
-        //this.deltaTime += (Time.deltaTime - this.deltaTime) * 0.1f;
-    }
+    //public Text st1, st2;
+    //string state = "0", state2 = "0";
+    //public void Update()
+    //{
+    //    // Calculate simple moving average for time to render screen. 0.1 factor used as smoothing
+    //    // value.
+    //    st1.text = state;
+    //    st2.text = state2;
+    //    //this.deltaTime += (Time.deltaTime - this.deltaTime) * 0.1f;
+    //}
 
     //public void OnGUI()
     //{
@@ -373,26 +365,25 @@ public class AdManager : MonoBehaviour
 #if UNITY_EDITOR
         string adUnitId = "ca-app-pub-9184116991089390/8781157049";
 #elif UNITY_ANDROID
-        //string adUnitId = "ca-app-pub-9184116991089390/8781157049";
-        string adUnitId = "ca-app-pub-3940256099942544/5224354917";
+        string adUnitId = "ca-app-pub-9184116991089390/8781157049";
+        //string adUnitId = "ca-app-pub-3940256099942544/5224354917";
 #elif UNITY_IPHONE
         string adUnitId = "ca-app-pub-3940256099942544/1712485313";
 #else
         string adUnitId = "unexpected_platform";
 #endif
         // Create new rewarded ad instance.
-        Debug.Log("Create Start");
         this.rewardedAd = new RewardedAd(adUnitId);
-        try
-        {
-            Debug.Log("reward state : " + this.rewardedAd);
-        }
-        catch (NullReferenceException ie)
-        {
-            Debug.Log("Error : " + ie);
-            rewardedAd = new RewardedAd(adUnitId);
-        }
-        Debug.Log("Create 1");
+        //try
+        //{
+        //    Debug.Log("reward state : " + this.rewardedAd);
+        //}
+        //catch (NullReferenceException ie)
+        //{
+        //    Debug.Log("Error : " + ie);
+        //    rewardedAd = new RewardedAd(adUnitId);
+        //}
+
         // Called when an ad request has successfully loaded.
         this.rewardedAd.OnAdLoaded += HandleRewardedAdLoaded;
         // Called when an ad request failed to load.
@@ -407,13 +398,10 @@ public class AdManager : MonoBehaviour
         this.rewardedAd.OnAdClosed += HandleRewardedAdClosed;
 
         // Create an empty ad request.
-        Debug.Log("Create 2");
         AdRequest request = this.CreateAdRequest();
         // Load the rewarded ad with the request.
-        Debug.Log("Create 3");
         this.rewardedAd.LoadAd(request);
-        Debug.Log("Create End");
-        state2 = "Create";
+        //state2 = "Create";
     }
 
     public void ShowInterstitial()
@@ -447,27 +435,27 @@ public class AdManager : MonoBehaviour
 
     public void ShowRewardedAd()
     {
-        try
-        {
-            if (this.rewardedAd == null)
-            {
-                Debug.Log("Show's rewardedAd is Null");
-            }
-        }
-        catch (NullReferenceException ie)
-        {
-            Debug.Log("Show Error : " + ie);
-            this.rewardedAd = new RewardedAd("ca-app-pub-3940256099942544/5224354917");
-            Debug.Log("Create 9");
-            AdRequest request = this.CreateAdRequest();
-            // Load the rewarded ad with the request.
-            Debug.Log("Create 10");
-            this.rewardedAd.LoadAd(request);
-        }
+        //try
+        //{
+        //    if (this.rewardedAd == null)
+        //    {
+        //        Debug.Log("Show's rewardedAd is Null");
+        //    }
+        //}
+        //catch (NullReferenceException ie)
+        //{
+        //    Debug.Log("Show Error : " + ie);
+        //    this.rewardedAd = new RewardedAd("ca-app-pub-3940256099942544/5224354917");
+        //    Debug.Log("Create 9");
+        //    AdRequest request = this.CreateAdRequest();
+        //    // Load the rewarded ad with the request.
+        //    Debug.Log("Create 10");
+        //    this.rewardedAd.LoadAd(request);
+        //}
         if (this.rewardedAd.IsLoaded())
         {
-            this.rewardedAd.Show();
-            state2 = "Show";
+           this.rewardedAd.Show();
+           //state2 = "Show";
         }
         else
         {
@@ -540,33 +528,33 @@ public class AdManager : MonoBehaviour
     public void HandleRewardedAdLoaded(object sender, EventArgs args)
     {
         rewardButton.gameObject.SetActive(true);
-        state2 = "HandleLoaded";
+        //state2 = "HandleLoaded";
         //MonoBehaviour.print("HandleRewardedAdLoaded event received");
     }
 
     public void HandleRewardedAdFailedToLoad(object sender, AdErrorEventArgs args)
     {
-        state2 = "HandleFailToLoad";
+        //state2 = "HandleFailToLoad";
         //MonoBehaviour.print(
         //    "HandleRewardedAdFailedToLoad event received with message: " + args.Message);
     }
 
     public void HandleRewardedAdOpening(object sender, EventArgs args)
     {
-        state2 = "adOpening";
+        //state2 = "adOpening";
         //MonoBehaviour.print("HandleRewardedAdOpening event received");
     }
 
     public void HandleRewardedAdFailedToShow(object sender, AdErrorEventArgs args)
     {
-        state2 = "FailToShow";
+        //state2 = "FailToShow";
         //MonoBehaviour.print(
         //    "HandleRewardedAdFailedToShow event received with message: " + args.Message);
     }
 
     public void HandleRewardedAdClosed(object sender, EventArgs args)
     {
-        state2 = "AdClosed";
+        //state2 = "AdClosed";
         CreateAndLoadRewardedAd();
         //MonoBehaviour.print("HandleRewardedAdClosed event received");
     }
